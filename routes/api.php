@@ -22,7 +22,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::controller(AuthController::class)->group(function(){
     Route::post('register', 'register');
     Route::post('login', 'login');
-    Route::post('login', 'login');
+    Route::post('reset/password','requestPasswordReset');
+    Route::post('verify/password/code/{user}', 'verifyPasswordResetCode');
+    Route::post('reset/password/{user}', 'resetPassword');
     Route::post('verify/code', 'verifyCode')->middleware('auth:sanctum');
     Route::post('logout', 'logout')->middleware('auth:sanctum');
 });
