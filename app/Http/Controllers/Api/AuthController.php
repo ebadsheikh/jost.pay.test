@@ -3,14 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\EmailVerification\VerifyCodeAction;
+use App\Actions\User\PasswordRequestEmailAction;
 use App\Actions\User\StoreUserAction;
 use App\Enums\HttpStatusCodesEnum;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\PasswordResetCodeRequest;
+use App\Http\Requests\Auth\PasswordResetEmailRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\SignInRequest;
 use App\Http\Requests\Auth\SignUpRequest;
 use App\Http\Requests\Auth\VerifyCodeRequest;
+use App\Mail\ResetPassword\ResetPasswordMail;
 use App\Mail\User\UserRegistered;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
@@ -18,13 +24,17 @@ class AuthController extends Controller
 {
     private StoreUserAction $storeUserAction;
     private VerifyCodeAction $verifyCodeAction;
+    private PasswordRequestEmailAction $passwordRequestEmailAction;
 
     public function __construct(
-        StoreUserAction $storeUserAction,
-        VerifyCodeAction $verifyCodeAction
-    ) {
+        StoreUserAction  $storeUserAction,
+        VerifyCodeAction $verifyCodeAction,
+        PasswordRequestEmailAction $passwordRequestEmailAction
+    )
+    {
         $this->storeUserAction = $storeUserAction;
         $this->verifyCodeAction = $verifyCodeAction;
+        $this->passwordRequestEmailAction = $passwordRequestEmailAction;
     }
 
     public function register(SignUpRequest $request)
@@ -83,6 +93,41 @@ class AuthController extends Controller
             'message' => 'Successfully Logged In',
             'user' => auth()->user(),
             'token' => auth()->user()->createToken('API Token')->plainTextToken,
+        ], HttpStatusCodesEnum::OK);
+    }
+
+    public function requestPasswordReset(PasswordResetEmailRequest $request)
+    {
+        $this->passwordRequestEmailAction->handle($request->validated());
+
+        return response()->json([
+            'status' => HttpStatusCodesEnum::OK,
+            'message' => 'Verification code sent to your email',
+        ], HttpStatusCodesEnum::OK);
+    }
+
+    public function verifyPasswordResetCode(PasswordResetCodeRequest $request, User $user)
+    {
+        if ($user->verification_code == $request->verification_code) {
+            return response()->json([
+                'status' => HttpStatusCodesEnum::OK,
+                'message' => 'Verification code is correct',
+            ],HttpStatusCodesEnum::OK);
+        } else {
+            return response()->json([
+                'status' => HttpStatusCodesEnum::UNAUTHORIZED,
+                'message' => 'User not found.',
+            ], HttpStatusCodesEnum::UNAUTHORIZED);
+        }
+    }
+
+    public function resetPassword(ResetPasswordRequest $request, User $user)
+    {
+        $user->password = bcrypt($request->password);
+        $user->save();
+        return response()->json([
+            'status' => HttpStatusCodesEnum::OK,
+            'message' => 'Password reset successfully',
         ], HttpStatusCodesEnum::OK);
     }
 
