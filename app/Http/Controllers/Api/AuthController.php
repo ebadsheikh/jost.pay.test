@@ -54,6 +54,7 @@ class AuthController extends Controller
             'status' => HttpStatusCodesEnum::OK,
             'message' => 'Successfully registered',
             'user' => $user,
+            'email_verified_at' => $user->email_verified_at,
             'token' => $user->createToken('API Token')->plainTextToken,
         ], HttpStatusCodesEnum::OK);
     }
@@ -62,7 +63,43 @@ class AuthController extends Controller
     {
         $verificationResult = $this->verifyCodeAction->handle($request->verification_code);
 
-        return response()->json($verificationResult['message'], $verificationResult['status']);
+        if ($verificationResult['success']) {
+            return response()->json([
+                'status' => HttpStatusCodesEnum::OK,
+                'message' => 'User verified successfully.',
+                'user' => $verificationResult['user'],
+            ], HttpStatusCodesEnum::OK);
+        } else {
+            return response()->json([
+                'status' => HttpStatusCodesEnum::UNAUTHORIZED,
+                'message' => 'Invalid verification code.',
+            ], HttpStatusCodesEnum::UNAUTHORIZED);
+        }
+    }
+
+    public function resendVerificationCode(Request $request)
+    {
+        $user = Auth::user();
+        if ($user) {
+            $verificationCode = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $user->verification_code = $verificationCode;
+            $user->save();
+            Mail::to($user->email)->send(new UserRegistered([
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'verification_code' => $verificationCode,
+            ]));
+
+            return response()->json([
+                'status' => HttpStatusCodesEnum::OK,
+                'message' => 'Verification code resent successfully.',
+            ], HttpStatusCodesEnum::OK);
+        } else {
+            return response()->json([
+                'status' => HttpStatusCodesEnum::UNAUTHORIZED,
+                'message' => 'User not authenticated.',
+            ], HttpStatusCodesEnum::UNAUTHORIZED);
+        }
     }
 
     public function login(SignInRequest $request)
