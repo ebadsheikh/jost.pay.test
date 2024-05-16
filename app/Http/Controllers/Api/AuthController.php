@@ -79,7 +79,7 @@ class AuthController extends Controller
 
     public function resendVerificationCode(Request $request)
     {
-        $user = Auth::user();
+        $user = User::where('email', $request->email)->first();
         if ($user) {
             $verificationCode = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
             $user->verification_code = $verificationCode;
@@ -90,16 +90,11 @@ class AuthController extends Controller
                 'verification_code' => $verificationCode,
             ]));
 
-            return response()->json([
-                'status' => HttpStatusCodesEnum::OK,
-                'message' => 'Verification code resent successfully.',
-            ], HttpStatusCodesEnum::OK);
-        } else {
-            return response()->json([
-                'status' => HttpStatusCodesEnum::UNAUTHORIZED,
-                'message' => 'User not authenticated.',
-            ], HttpStatusCodesEnum::UNAUTHORIZED);
         }
+        return response()->json([
+            'status' => HttpStatusCodesEnum::OK,
+            'message' => 'Verification code resent successfully.',
+        ], HttpStatusCodesEnum::OK);
     }
 
     public function login(SignInRequest $request)
@@ -149,6 +144,8 @@ class AuthController extends Controller
             return response()->json([
                 'status' => HttpStatusCodesEnum::OK,
                 'message' => 'Verification code is correct',
+                'user' => $user,
+                'token' => $user->createToken('API Token')->plainTextToken,
             ],HttpStatusCodesEnum::OK);
         } else {
             return response()->json([
