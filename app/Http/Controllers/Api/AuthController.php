@@ -130,11 +130,12 @@ class AuthController extends Controller
 
     public function requestPasswordReset(PasswordResetEmailRequest $request)
     {
-        $this->passwordRequestEmailAction->handle($request->validated());
+        $user = $this->passwordRequestEmailAction->handle($request->validated());
 
         return response()->json([
             'status' => HttpStatusCodesEnum::OK,
             'message' => 'Verification code sent to your email',
+            'user' => $user,
         ], HttpStatusCodesEnum::OK);
     }
 
