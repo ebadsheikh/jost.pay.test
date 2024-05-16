@@ -16,15 +16,13 @@ class VerifyCodeAction
             $user->save();
 
             return [
-                'status' => HttpStatusCodesEnum::OK,
-                'message' => 'User verified successfully.',
+                'success' => true,
                 'user' => $user,
                 'token' => $user->createToken('API Token')->plainTextToken,
             ];
         } else {
             return [
-                'status' => HttpStatusCodesEnum::UNAUTHORIZED,
-                'message' => 'Invalid verification code.',
+                'success' => false,
             ];
         }
     }

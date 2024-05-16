@@ -26,5 +26,6 @@ Route::controller(AuthController::class)->group(function(){
     Route::post('verify/password/code/{user}', 'verifyPasswordResetCode');
     Route::post('reset/password/{user}', 'resetPassword');
     Route::post('verify/code', 'verifyCode')->middleware('auth:sanctum');
+    Route::post('resend/verification/code', 'resendVerificationCode')->middleware('auth:sanctum');
     Route::post('logout', 'logout')->middleware('auth:sanctum');
 });
