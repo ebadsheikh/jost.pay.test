@@ -158,7 +158,7 @@ class AuthController extends Controller
 
     public function resetPassword(ResetPasswordRequest $request, User $user)
     {
-        $user->password = bcrypt($request->password);
+        $user->password = $request->password;
         $user->save();
         return response()->json([
             'status' => HttpStatusCodesEnum::OK,
