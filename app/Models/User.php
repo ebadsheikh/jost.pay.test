@@ -14,33 +14,19 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
     use HasApiTokens;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'first_name',
         'last_name',
         'email',
         'password',
+        'pin_code'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
@@ -48,15 +34,15 @@ class User extends Authenticatable
     protected function password(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => $value,
-            set: fn ($value) => bcrypt($value)
+            get: fn($value) => $value,
+            set: fn($value) => bcrypt($value)
         );
     }
 
     protected function fullName(): Attribute
     {
         return Attribute::make(
-            get: fn (mixed $value) => $this->first_name.' '.$this->last_name
+            get: fn(mixed $value) => $this->first_name . ' ' . $this->last_name
         );
     }
 }

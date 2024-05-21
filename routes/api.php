@@ -19,13 +19,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::controller(AuthController::class)->group(function(){
+Route::controller(AuthController::class)->group(function () {
     Route::post('register', 'register');
     Route::post('login', 'login');
-    Route::post('reset/password','requestPasswordReset');
+    Route::post('reset/password', 'requestPasswordReset');
     Route::post('verify/password/code/{user}', 'verifyPasswordResetCode');
     Route::post('reset/password/{user}', 'resetPassword');
     Route::post('verify/code', 'verifyCode')->middleware('auth:sanctum');
+    Route::post('pin/code/create', 'createPinCode')->middleware('auth:sanctum');
+    Route::post('pin/code/verify', 'verifyPinCode')->middleware('auth:sanctum');
     Route::post('resend/verification/code', 'resendVerificationCode');
     Route::post('logout', 'logout')->middleware('auth:sanctum');
 });

@@ -7,17 +7,20 @@ use App\Actions\User\PasswordRequestEmailAction;
 use App\Actions\User\StoreUserAction;
 use App\Enums\HttpStatusCodesEnum;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\CreatePinCode;
 use App\Http\Requests\Auth\PasswordResetCodeRequest;
 use App\Http\Requests\Auth\PasswordResetEmailRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\SignInRequest;
 use App\Http\Requests\Auth\SignUpRequest;
 use App\Http\Requests\Auth\VerifyCodeRequest;
+use App\Http\Requests\Auth\VerifyPinCode;
 use App\Mail\ResetPassword\ResetPasswordMail;
 use App\Mail\User\UserRegistered;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
@@ -27,8 +30,8 @@ class AuthController extends Controller
     private PasswordRequestEmailAction $passwordRequestEmailAction;
 
     public function __construct(
-        StoreUserAction  $storeUserAction,
-        VerifyCodeAction $verifyCodeAction,
+        StoreUserAction            $storeUserAction,
+        VerifyCodeAction           $verifyCodeAction,
         PasswordRequestEmailAction $passwordRequestEmailAction
     )
     {
@@ -73,6 +76,36 @@ class AuthController extends Controller
             return response()->json([
                 'status' => HttpStatusCodesEnum::UNAUTHORIZED,
                 'message' => 'Invalid verification code.',
+            ], HttpStatusCodesEnum::UNAUTHORIZED);
+        }
+    }
+
+    public function createPinCode(CreatePinCode $request)
+    {
+        $user = Auth::user();
+
+        $user->pin_code = bcrypt($request->pin_code);
+        $user->save();
+
+        return response()->json([
+            'status' => HttpStatusCodesEnum::OK,
+            'message' => 'Pin code created successfully.',
+        ], HttpStatusCodesEnum::OK);
+    }
+
+    public function verifyPinCode(VerifyPinCode $request)
+    {
+        $user = Auth::user();
+
+        if (Hash::check($request->pin_code, $user->pin_code)) {
+            return response()->json([
+                'status' => HttpStatusCodesEnum::OK,
+                'message' => 'Pin code verified successfully.',
+            ], HttpStatusCodesEnum::OK);
+        } else {
+            return response()->json([
+                'status' => HttpStatusCodesEnum::UNAUTHORIZED,
+                'message' => 'Unauthorized.',
             ], HttpStatusCodesEnum::UNAUTHORIZED);
         }
     }
@@ -147,7 +180,7 @@ class AuthController extends Controller
                 'message' => 'Verification code is correct',
                 'user' => $user,
                 'token' => $user->createToken('API Token')->plainTextToken,
-            ],HttpStatusCodesEnum::OK);
+            ], HttpStatusCodesEnum::OK);
         } else {
             return response()->json([
                 'status' => HttpStatusCodesEnum::UNAUTHORIZED,
