@@ -15,9 +15,10 @@ use App\Http\Requests\Auth\SignInRequest;
 use App\Http\Requests\Auth\SignUpRequest;
 use App\Http\Requests\Auth\VerifyCodeRequest;
 use App\Http\Requests\Auth\VerifyPinCode;
-use App\Mail\ResetPassword\ResetPasswordMail;
+use App\Mail\User\UserLogin;
 use App\Mail\User\UserRegistered;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -57,20 +58,19 @@ class AuthController extends Controller
             'status' => HttpStatusCodesEnum::OK,
             'message' => 'Successfully registered',
             'user' => $user,
-            'email_verified_at' => $user->email_verified_at,
-            'token' => $user->createToken('API Token')->plainTextToken,
         ], HttpStatusCodesEnum::OK);
     }
 
     public function verifyCode(VerifyCodeRequest $request)
     {
-        $verificationResult = $this->verifyCodeAction->handle($request->verification_code);
+        $verificationResult = $this->verifyCodeAction->handle($request);
 
         if ($verificationResult['success']) {
             return response()->json([
                 'status' => HttpStatusCodesEnum::OK,
-                'message' => 'User verified successfully.',
+                'message' => 'Code verified successfully.',
                 'user' => $verificationResult['user'],
+                'token' => $verificationResult['token'],
             ], HttpStatusCodesEnum::OK);
         } else {
             return response()->json([
@@ -132,33 +132,31 @@ class AuthController extends Controller
 
     public function login(SignInRequest $request)
     {
-        $data = $request->validated();
+        $user = User::whereEmail($request->email)->first();
 
-        if (!$user = User::where('email', $data['email'])->first()) {
-            return response()->json([
-                'status' => HttpStatusCodesEnum::UNAUTHORIZED,
-                'message' => 'User not found.',
-            ], HttpStatusCodesEnum::UNAUTHORIZED);
-        }
-        if (!$user->email_verified_at) {
-            return response()->json([
-                'status' => HttpStatusCodesEnum::UNAUTHORIZED,
-                'message' => 'Email not verified. Please verify your email to login.',
-            ], HttpStatusCodesEnum::UNAUTHORIZED);
-        }
-        if (!Auth::attempt($data)) {
-            return response()->json([
-                'status' => HttpStatusCodesEnum::UNAUTHORIZED,
-                'message' => 'Credentials not match',
-            ], HttpStatusCodesEnum::UNAUTHORIZED);
-        }
+        if ($user) {
+            $verificationCode = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        return response()->json([
-            'status' => HttpStatusCodesEnum::OK,
-            'message' => 'Successfully Logged In',
-            'user' => auth()->user(),
-            'token' => auth()->user()->createToken('API Token')->plainTextToken,
-        ], HttpStatusCodesEnum::OK);
+            $user->verification_code = $verificationCode;
+            $user->save();
+
+            Mail::to($user->email)->send(new UserLogin([
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'verification_code' => $verificationCode,
+            ]));
+
+            return response()->json([
+                'status' => HttpStatusCodesEnum::OK,
+                'message' => 'Code Sent Through Email',
+                'user' => $user,
+            ], HttpStatusCodesEnum::OK);
+        } else {
+            return response()->json([
+                'status' => HttpStatusCodesEnum::UNAUTHORIZED,
+                'message' => 'Email does not exist in our system.'
+            ], HttpStatusCodesEnum::UNAUTHORIZED);
+        }
     }
 
     public function requestPasswordReset(PasswordResetEmailRequest $request)
@@ -197,6 +195,31 @@ class AuthController extends Controller
             'status' => HttpStatusCodesEnum::OK,
             'message' => 'Password reset successfully',
         ], HttpStatusCodesEnum::OK);
+    }
+
+    public function createNickName(Request $request)
+    {
+        $request->validate([
+           'nick_name' => 'required|min:3|max:20',
+        ]);
+
+        try{
+            $user = Auth::user();
+
+            $user->nick_name = $request->nick_name;
+            $user->save();
+
+            return response()->json([
+                'status' => HttpStatusCodesEnum::OK,
+                'message' => 'Nickname saved successfully',
+                'user' => $user,
+            ], HttpStatusCodesEnum::OK);
+        }catch(Exception $ex){
+            return response()->json([
+                'status' => HttpStatusCodesEnum::INTERNAL_SERVER_ERROR,
+                'message' => 'Something Went Wrong!',
+            ], HttpStatusCodesEnum::INTERNAL_SERVER_ERROR);
+        }
     }
 
     public function logout()

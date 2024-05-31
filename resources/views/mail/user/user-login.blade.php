@@ -1,7 +1,7 @@
 <x-mail::message>
     Dear {{$mailData['full_name']}}
 
-    We are pleased to inform you that your profile has been successfully created on the Jost Pay platform.
+    Please use the below OTP to login in Jost Pay App.
 
     Email: {{$mailData['email']}}
 
@@ -9,7 +9,7 @@
 
     Please ensure to keep your login information confidential and secure.
 
-    Thank you for joining our platform. We look forward to providing you with an exceptional experience.
+    Thank you for using our platform. We look forward to providing you with an exceptional experience.
 
     Best regards,
     {{ config('app.name') }}
