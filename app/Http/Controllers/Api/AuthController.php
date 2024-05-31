@@ -148,8 +148,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => HttpStatusCodesEnum::OK,
-                'message' => 'Code Sent Through Email',
-                'user' => $user,
+                'message' => 'Code Sent Through Email'
             ], HttpStatusCodesEnum::OK);
         } else {
             return response()->json([
